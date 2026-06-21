@@ -1,0 +1,23 @@
+# SIGNAL backend — Render free web service (Express + Socket.io / WebSockets).
+# Render reads this file on a Blueprint deploy. Secrets are set in the dashboard
+# (sync: false), never committed.
+services:
+  - type: web
+    name: signal-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm --prefix server install
+    startCommand: npm --prefix server start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "4000"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        sync: false
