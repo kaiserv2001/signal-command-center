@@ -21,11 +21,12 @@ const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
   .map((o) => o.trim())
   .filter(Boolean);
 
-// Allow same-origin/no-origin requests (curl, health probes) and any listed origin.
+// Allow same-origin/no-origin requests (curl, health probes) and any listed
+// origin. An unlisted origin is denied by omitting the CORS header (cb(null,
+// false)) rather than throwing — the browser blocks it client-side, but the
+// request itself never 500s.
 const corsOrigin = (origin, cb) =>
-  !origin || ALLOWED_ORIGINS.includes(origin)
-    ? cb(null, true)
-    : cb(new Error(`origin not allowed: ${origin}`));
+  cb(null, !origin || ALLOWED_ORIGINS.includes(origin));
 
 const app = express();
 app.use(cors({ origin: corsOrigin, credentials: true }));
