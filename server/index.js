@@ -14,10 +14,21 @@ import Note from "./models/Note.js";
 import AlertRule from "./models/AlertRule.js";
 
 const PORT = process.env.PORT || 4000;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+// CLIENT_ORIGIN may be a single origin or a comma-separated list (e.g. the
+// Vercel production URL + preview URLs). Empty entries are ignored.
+const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+// Allow same-origin/no-origin requests (curl, health probes) and any listed origin.
+const corsOrigin = (origin, cb) =>
+  !origin || ALLOWED_ORIGINS.includes(origin)
+    ? cb(null, true)
+    : cb(new Error(`origin not allowed: ${origin}`));
 
 const app = express();
-app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
 
 // Health probe — confirms the API boots.
@@ -63,7 +74,7 @@ app.use("/api", (_req, res) => res.status(404).json({ error: "not found" }));
 const httpServer = http.createServer(app);
 
 // Sprint 3 — real-time: JWT-authed sockets, feed:update broadcasts, alert:hit.
-const io = new Server(httpServer, { cors: { origin: CLIENT_ORIGIN } });
+const io = new Server(httpServer, { cors: { origin: ALLOWED_ORIGINS } });
 initRealtime(io);
 
 // Graceful boot: connect to Mongo if a URI is present, but never block/crash
